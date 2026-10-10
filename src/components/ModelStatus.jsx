@@ -17,7 +17,7 @@ export default function ModelStatus({ model, name, size }) {
         <span style={{ fontSize: '0.72rem', color, display: 'flex', alignItems: 'center', gap: 4 }} className="mono">
           {st.status === 'idle' && <>{size} · loads on first run</>}
           {st.status === 'loading' && <><Download size={12} /> {st.progress ?? 0}%</>}
-          {st.status === 'ready' && <><CheckCircle2 size={12} /> ready{st.lastMs != null ? ` · ${st.lastMs} ms` : ''}</>}
+          {st.status === 'ready' && <><CheckCircle2 size={12} /> ready{st.backend ? ` · ${st.backend}` : ''}{st.lastMs != null ? ` · ${st.lastMs} ms` : ''}</>}
           {st.status === 'error' && <><AlertTriangle size={12} /> failed</>}
         </span>
       </div>

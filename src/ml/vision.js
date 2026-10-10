@@ -3,7 +3,7 @@
 import { useSyncExternalStore } from 'react';
 
 export const DETECTION_MODELS = [
-  { id: 'Xenova/yolos-tiny', name: 'YOLOS-Tiny (ViT detector)', size: '~7 MB' },
+  { id: 'Xenova/yolos-tiny', name: 'YOLOS-Tiny (ViT detector)', size: '~26 MB on GPU, 7 MB on CPU' },
   { id: 'Xenova/detr-resnet-50', name: 'DETR ResNet-50 (Facebook)', size: '~43 MB' },
 ];
 export const CLIP_MODEL = { id: 'Xenova/clip-vit-base-patch32', name: 'OpenAI CLIP ViT-B/32', size: '~90 MB' };
@@ -51,7 +51,7 @@ function getWorker() {
         return;
       }
       if (data.type === 'ready') {
-        setModel(data.model, { status: 'ready', progress: 100 });
+        setModel(data.model, { status: 'ready', progress: 100, backend: data.backend });
         return;
       }
       const req = pending.get(data.id);
@@ -94,6 +94,28 @@ export function useModelStatus(model) {
 }
 export function useLastLatency() {
   return useSyncExternalStore(subscribe, () => lastLatency);
+}
+
+// ---------- post-processing ----------
+// Intersection-over-union of two [x, y, w, h] boxes
+export function iou(a, b) {
+  const x1 = Math.max(a[0], b[0]);
+  const y1 = Math.max(a[1], b[1]);
+  const x2 = Math.min(a[0] + a[2], b[0] + b[2]);
+  const y2 = Math.min(a[1] + a[3], b[1] + b[3]);
+  const inter = Math.max(0, x2 - x1) * Math.max(0, y2 - y1);
+  const union = a[2] * a[3] + b[2] * b[3] - inter;
+  return union > 0 ? inter / union : 0;
+}
+
+// Greedy per-class non-maximum suppression: keep the highest-scoring box and
+// drop same-class boxes that overlap it by more than `threshold` IoU.
+export function nonMaxSuppression(dets, threshold) {
+  const kept = [];
+  for (const d of [...dets].sort((a, b) => b.confidence - a.confidence)) {
+    if (!kept.some((k) => k.label === d.label && iou(k.bbox, d.bbox) > threshold)) kept.push(d);
+  }
+  return kept;
 }
 
 // ---------- image helpers ----------

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Camera, Upload, Sliders, Activity, Eye, Zap, Aperture, ImageIcon, Loader2 } from 'lucide-react';
 import {
-  detectObjects, loadImagePixels, captureVideoFrame, colorForLabel,
+  detectObjects, loadImagePixels, captureVideoFrame, colorForLabel, nonMaxSuppression,
   SAMPLE_PHOTOS, DETECTION_MODELS,
 } from '../ml/vision';
 import ModelStatus from './ModelStatus';
@@ -12,6 +12,7 @@ const toPhoto = (p) => ({ ...p, kind: 'photo' });
 export default function PerceptionStudio({ dataset, activeModel }) {
   const [source, setSource] = useState(() => toPhoto(SAMPLE_PHOTOS[0]));
   const [confThreshold, setConfThreshold] = useState(0.5);
+  const [iouThreshold, setIouThreshold] = useState(0.5);
   const [showMasks, setShowMasks] = useState(true);
   const [isWebcamActive, setIsWebcamActive] = useState(false);
   const [webcamError, setWebcamError] = useState(null);
@@ -117,7 +118,9 @@ export default function PerceptionStudio({ dataset, activeModel }) {
   const viewH = isLiveSource ? (liveReady ? live.height : 500) : 500;
   const k = viewW / 800; // scale label sizes to the image
   const objects = isLiveSource ? (liveReady ? live.boxes : []) : (source.objects || []);
-  const filteredObjects = objects.filter((o) => o.confidence >= confThreshold);
+  const aboveThreshold = objects.filter((o) => o.confidence >= confThreshold);
+  // Real detectors emit overlapping duplicates; synthetic labels are already clean
+  const filteredObjects = isLiveSource ? nonMaxSuppression(aboveThreshold, iouThreshold) : aboveThreshold;
 
   const thumbs = [
     ...SAMPLE_PHOTOS.map(toPhoto),
@@ -269,6 +272,20 @@ export default function PerceptionStudio({ dataset, activeModel }) {
           <input type="range" min="0.1" max="0.99" step="0.01" value={confThreshold}
             onChange={(e) => setConfThreshold(parseFloat(e.target.value))}
             style={{ width: '100%', accentColor: 'var(--primary-cyan)' }} aria-label="Confidence threshold" />
+          {isLiveSource && (
+            <>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', margin: '14px 0 6px' }}>
+                <span>NMS IoU threshold</span>
+                <strong style={{ color: 'var(--primary-emerald)' }}>{(iouThreshold * 100).toFixed(0)}%</strong>
+              </div>
+              <input type="range" min="0.1" max="0.95" step="0.05" value={iouThreshold}
+                onChange={(e) => setIouThreshold(parseFloat(e.target.value))}
+                style={{ width: '100%', accentColor: 'var(--primary-emerald)' }} aria-label="NMS IoU threshold" />
+              <p style={{ fontSize: '0.72rem', color: 'var(--text-dim)', marginTop: 6 }}>
+                Removes same-class boxes that overlap a higher-scoring one ({aboveThreshold.length - filteredObjects.length} suppressed).
+              </p>
+            </>
+          )}
           {!isLiveSource && (
             <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.85rem', marginTop: 12 }}>
               <input type="checkbox" checked={showMasks} onChange={(e) => setShowMasks(e.target.checked)} />

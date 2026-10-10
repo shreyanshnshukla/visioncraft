@@ -74,7 +74,7 @@ export default function Header({ selectedDataset, onSelectDataset, activeModel, 
           {/* Real inference telemetry */}
           <div className="badge-status badge-emerald" style={{ padding: '6px 12px' }}>
             <span className="pulse-dot"></span>
-            <span>{latency != null ? `Last inference ${latency} ms` : 'WASM · Web Worker'}</span>
+            <span>{latency != null ? `Last inference ${latency} ms` : 'In-browser · Web Worker'}</span>
           </div>
 
           <a className="btn-secondary" href="https://github.com/shreyanshnshukla/visioncraft" target="_blank" rel="noreferrer" style={{ padding: '6px 12px', textDecoration: 'none', fontSize: '0.85rem' }}>

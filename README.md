@@ -8,7 +8,7 @@ VisionCraft runs real computer-vision models **entirely in your browser**: no se
 
 | | What it does | Model |
 |---|---|---|
-| **Object Detection** (live) | Detects 80 COCO classes on sample photos, uploads or webcam captures, with an adjustable confidence threshold and per-run latency | `Xenova/yolos-tiny` (default) or `Xenova/detr-resnet-50` |
+| **Object Detection** (live) | Detects 80 COCO classes on sample photos, uploads or webcam captures, with confidence and NMS IoU thresholds and per-run latency | `Xenova/yolos-tiny` (default) or `Xenova/detr-resnet-50` |
 | **CLIP Zero-Shot** (live) | Scores an image against any free-text labels you type; no training needed | `Xenova/clip-vit-base-patch32` |
 | **BBox Annotator** | Draw boxes with mouse or touch and export them as **YOLO**, **COCO JSON** or **Pascal VOC XML** | — |
 | Embedding Projection, Feature Maps & Grad-CAM, MLOps Dashboard | UI demos of ML tooling built on synthetic data (labelled *Demo* in the app) | — |
@@ -16,7 +16,7 @@ VisionCraft runs real computer-vision models **entirely in your browser**: no se
 ## How it works
 
 ```
-React UI ──postMessage──▶ Web Worker ──▶ Transformers.js ──▶ ONNX Runtime Web (WASM)
+React UI ──postMessage──▶ Web Worker ──▶ Transformers.js ──▶ ONNX Runtime Web (WebGPU / WASM)
    ▲                         │                     │
    └──── boxes / scores ◀────┘          quantized ONNX weights from the Hugging Face Hub
                                         (downloaded once, then cached by the browser)
@@ -24,12 +24,14 @@ React UI ──postMessage──▶ Web Worker ──▶ Transformers.js ──�
 
 - **Off the main thread:** models load and run inside a module Web Worker (`src/ml/visionWorker.js`), so the UI never freezes during the download or during inference.
 - **One pixel pipeline:** every input (remote photo, uploaded file, webcam frame, or SVG scene) is drawn to a canvas, downscaled, converted to RGB and sent to the worker as a typed array (`src/ml/vision.js`).
+- **GPU when available:** YOLOS-Tiny runs on WebGPU (fp32) when the browser supports it, and falls back to quantized q8 weights on WASM otherwise.
+- **Non-maximum suppression:** a greedy per-class NMS pass (`nonMaxSuppression` in `src/ml/vision.js`) removes the overlapping duplicate boxes that DETR-style detectors produce.
 - **Live model status:** a small external store tracks download progress per model, ready/error state and real inference latency, and React reads it with `useSyncExternalStore`.
 - **Overlays:** detections come back as normalized boxes and are drawn on an SVG overlay in the image's own pixel space, so they line up at any screen size.
 
 ## Tech stack
 
-React 19 · Vite · Transformers.js 3 · ONNX Runtime Web · Web Workers · Canvas API · lucide-react · GitHub Actions → GitHub Pages
+React 19 · Vite · Transformers.js 3 · ONNX Runtime Web (WebGPU + WASM) · Web Workers · Canvas API · lucide-react · GitHub Actions → GitHub Pages
 
 ## Run locally
 

@@ -17,15 +17,33 @@ function getLib() {
   return libPromise;
 }
 
+// Models that run on the GPU via WebGPU when the browser supports it
+// (fp32 weights), falling back to quantized (q8) WASM on the CPU.
+const GPU_MODELS = new Set(['Xenova/yolos-tiny']);
+
+async function createPipeline(task, model) {
+  const { pipeline } = await getLib();
+  const progress_callback = (info) => self.postMessage({ type: 'progress', model, info });
+  if (GPU_MODELS.has(model) && self.navigator?.gpu) {
+    try {
+      const adapter = await self.navigator.gpu.requestAdapter();
+      if (adapter) {
+        const pipe = await pipeline(task, model, { device: 'webgpu', dtype: 'fp32', progress_callback });
+        return { pipe, backend: 'WebGPU' };
+      }
+    } catch (err) {
+      console.warn('WebGPU unavailable, falling back to WASM:', err);
+    }
+  }
+  const pipe = await pipeline(task, model, { device: 'wasm', dtype: 'q8', progress_callback });
+  return { pipe, backend: 'WASM' };
+}
+
 function getPipeline(task, model) {
   const key = `${task}::${model}`;
   if (!pipelines.has(key)) {
-    const p = getLib().then(({ pipeline }) =>
-      pipeline(task, model, {
-        progress_callback: (info) => self.postMessage({ type: 'progress', model, info }),
-      })
-    ).then((pipe) => {
-      self.postMessage({ type: 'ready', model });
+    const p = createPipeline(task, model).then(({ pipe, backend }) => {
+      self.postMessage({ type: 'ready', model, backend });
       return pipe;
     });
     // Allow a retry if loading fails (e.g. flaky network)
