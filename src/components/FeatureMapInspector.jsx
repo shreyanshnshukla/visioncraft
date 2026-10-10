@@ -9,7 +9,7 @@ export default function FeatureMapInspector({ dataset }) {
   const currentImg = dataset.images[0];
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+    <div className="grid-2">
       
       {/* Left Feature Layer Viewport */}
       <div className="glass-panel" style={{ padding: '20px' }}>
@@ -65,7 +65,7 @@ export default function FeatureMapInspector({ dataset }) {
         </div>
 
         {/* Layer Activation Feature Tiles */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
+        <div className="grid-4">
           {[1, 2, 3, 4, 5, 6, 7, 8].map(idx => (
             <div key={idx} style={{ background: '#020617', padding: '6px', borderRadius: '6px', border: '1px solid #1e293b', textAlign: 'center' }}>
               <img 

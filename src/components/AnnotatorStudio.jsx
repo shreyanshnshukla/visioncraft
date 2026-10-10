@@ -1,11 +1,11 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Edit3, Download, Copy, RefreshCw, Check, Layers, Sliders, FileCode } from 'lucide-react';
 import { exportToYOLO, exportToCOCO, exportToPascalVOC } from '../utils/cvEngine';
 
 export default function AnnotatorStudio({ dataset }) {
   const [currentImage, setCurrentImage] = useState(dataset.images[0]);
   const [annotations, setAnnotations] = useState(currentImage.objects);
-  const [selectedClass, setSelectedClass] = useState("Vehicle / Object");
+  const [selectedClass, setSelectedClass] = useState("Vehicle / Car");
   const [exportFormat, setExportFormat] = useState("yolo");
   const [copied, setCopied] = useState(false);
 
@@ -22,8 +22,15 @@ export default function AnnotatorStudio({ dataset }) {
 
   const containerRef = useRef(null);
 
+  // Follow the global dataset selector
+  useEffect(() => {
+    setCurrentImage(dataset.images[0]);
+    setAnnotations(dataset.images[0].objects);
+  }, [dataset]);
+
   const handleMouseDown = (e) => {
     if (!containerRef.current) return;
+    e.currentTarget.setPointerCapture?.(e.pointerId);
     const rect = containerRef.current.getBoundingClientRect();
     const x = ((e.clientX - rect.left) / rect.width) * 800;
     const y = ((e.clientY - rect.top) / rect.height) * 500;
@@ -84,18 +91,18 @@ export default function AnnotatorStudio({ dataset }) {
   };
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+    <div className="grid-2">
       
       {/* Left Canvas Annotation Studio */}
       <div className="glass-panel" style={{ padding: '20px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: 10 }}>
           <div>
             <h2 style={{ fontSize: '1.2rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Edit3 size={20} color="var(--primary-cyan)" />
               Interactive BBox Annotator
             </h2>
             <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-              Click and drag mouse over canvas to draw custom bounding boxes
+              Drag on the canvas (mouse or touch) to draw bounding boxes, then export
             </p>
           </div>
 
@@ -110,7 +117,7 @@ export default function AnnotatorStudio({ dataset }) {
         </div>
 
         {/* Class Selection & Drawing Tools */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px', flexWrap: 'wrap' }}>
           <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Annotation Class:</span>
           <select 
             className="input-custom" 
@@ -129,9 +136,10 @@ export default function AnnotatorStudio({ dataset }) {
         {/* Annotation Canvas Viewport */}
         <div 
           ref={containerRef}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
+          onPointerDown={handleMouseDown}
+          onPointerMove={handleMouseMove}
+          onPointerUp={handleMouseUp}
+          onPointerCancel={handleMouseUp}
           style={{
             position: 'relative',
             width: '100%',
@@ -141,7 +149,8 @@ export default function AnnotatorStudio({ dataset }) {
             overflow: 'hidden',
             border: '1.5px dashed var(--primary-cyan)',
             cursor: 'crosshair',
-            userSelect: 'none'
+            userSelect: 'none',
+            touchAction: 'none'
           }}
         >
           <img 

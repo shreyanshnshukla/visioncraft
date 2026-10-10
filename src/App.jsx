@@ -7,107 +7,76 @@ import ZeroShotStudio from './components/ZeroShotStudio';
 import FeatureMapInspector from './components/FeatureMapInspector';
 import MlopsDashboard from './components/MlopsDashboard';
 
-import { Eye, Edit3, Network, Sparkles, Layers, BarChart2 } from 'lucide-react';
+import { Eye, Edit3, Network, Sparkles, Layers, BarChart2, Info } from 'lucide-react';
 import { PRESET_DATASETS } from './data/presetDatasets';
+import { DETECTION_MODELS } from './ml/vision';
+
+const TABS = [
+  { id: 'perception', label: 'Object Detection', icon: Eye, live: true },
+  { id: 'zeroshot', label: 'CLIP Zero-Shot', icon: Sparkles, live: true },
+  { id: 'annotator', label: 'BBox Annotator & Export', icon: Edit3 },
+  { id: 'embedding', label: 'Embedding Projection', icon: Network, demo: true },
+  { id: 'featuremaps', label: 'Feature Maps & Grad-CAM', icon: Layers, demo: true },
+  { id: 'mlops', label: 'MLOps Dashboard', icon: BarChart2, demo: true },
+];
 
 export default function App() {
   const [selectedDataset, setSelectedDataset] = useState(PRESET_DATASETS[0]);
-  const [activeModel, setActiveModel] = useState("YOLOv8x-ViT");
-  const [activeTab, setActiveTab] = useState("perception");
+  const [activeModel, setActiveModel] = useState(DETECTION_MODELS[0].id);
+  const [activeTab, setActiveTab] = useState('perception');
+  const tab = TABS.find((t) => t.id === activeTab);
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      
-      {/* Header Bar */}
-      <Header 
+      <Header
         selectedDataset={selectedDataset}
         onSelectDataset={setSelectedDataset}
         activeModel={activeModel}
         onSelectModel={setActiveModel}
       />
 
-      {/* Main Container */}
-      <main style={{ flex: 1, padding: '0 24px 32px 24px', maxWidth: '1600px', width: '100%', margin: '0 auto' }}>
-        
-        {/* Navigation Tabs Bar */}
-        <div className="glass-panel" style={{ padding: '6px 12px', marginBottom: '20px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-          <button 
-            className={`tab-btn ${activeTab === 'perception' ? 'active' : ''}`}
-            onClick={() => setActiveTab('perception')}
-          >
-            <Eye size={18} /> Vision Perception Engine
-          </button>
-          
-          <button 
-            className={`tab-btn ${activeTab === 'annotator' ? 'active' : ''}`}
-            onClick={() => setActiveTab('annotator')}
-          >
-            <Edit3 size={18} /> BBox Annotator & Augmentation
-          </button>
-          
-          <button 
-            className={`tab-btn ${activeTab === 'embedding' ? 'active' : ''}`}
-            onClick={() => setActiveTab('embedding')}
-          >
-            <Network size={18} /> Embedding Projection (t-SNE/UMAP)
-          </button>
+      <main className="app-main">
+        <nav className="glass-panel tab-bar" aria-label="Workbench sections">
+          {TABS.map(({ id, label, icon: Icon, live, demo }) => (
+            <button
+              key={id}
+              className={`tab-btn ${activeTab === id ? 'active' : ''}`}
+              onClick={() => setActiveTab(id)}
+              aria-current={activeTab === id ? 'page' : undefined}
+            >
+              <Icon size={17} /> {label}
+              {live && <span className="tab-tag tab-tag-live">Live</span>}
+              {demo && <span className="tab-tag">Demo</span>}
+            </button>
+          ))}
+        </nav>
 
-          <button 
-            className={`tab-btn ${activeTab === 'zeroshot' ? 'active' : ''}`}
-            onClick={() => setActiveTab('zeroshot')}
-          >
-            <Sparkles size={18} /> CLIP Zero-Shot & VQA
-          </button>
+        {tab?.demo && (
+          <div className="note-banner" style={{ marginBottom: 16, display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+            <Info size={16} style={{ flexShrink: 0, marginTop: 1 }} />
+            <span>
+              Illustrative demo: this view uses synthetic data to show the tooling UI.
+              The <strong>Object Detection</strong> and <strong>CLIP Zero-Shot</strong> tabs run real models in your browser.
+            </span>
+          </div>
+        )}
 
-          <button 
-            className={`tab-btn ${activeTab === 'featuremaps' ? 'active' : ''}`}
-            onClick={() => setActiveTab('featuremaps')}
-          >
-            <Layers size={18} /> Neural Feature Maps & Grad-CAM
-          </button>
-
-          <button 
-            className={`tab-btn ${activeTab === 'mlops' ? 'active' : ''}`}
-            onClick={() => setActiveTab('mlops')}
-          >
-            <BarChart2 size={18} /> MLOps Benchmarks & Audit
-          </button>
-        </div>
-
-        {/* Tab Views */}
         <div>
-          {activeTab === 'perception' && (
-            <PerceptionStudio dataset={selectedDataset} activeModel={activeModel} />
-          )}
-
-          {activeTab === 'annotator' && (
-            <AnnotatorStudio dataset={selectedDataset} />
-          )}
-
-          {activeTab === 'embedding' && (
-            <EmbeddingVisualizer />
-          )}
-
-          {activeTab === 'zeroshot' && (
-            <ZeroShotStudio dataset={selectedDataset} />
-          )}
-
-          {activeTab === 'featuremaps' && (
-            <FeatureMapInspector dataset={selectedDataset} />
-          )}
-
-          {activeTab === 'mlops' && (
-            <MlopsDashboard dataset={selectedDataset} />
-          )}
+          {activeTab === 'perception' && <PerceptionStudio dataset={selectedDataset} activeModel={activeModel} />}
+          {activeTab === 'zeroshot' && <ZeroShotStudio dataset={selectedDataset} />}
+          {activeTab === 'annotator' && <AnnotatorStudio dataset={selectedDataset} />}
+          {activeTab === 'embedding' && <EmbeddingVisualizer />}
+          {activeTab === 'featuremaps' && <FeatureMapInspector dataset={selectedDataset} />}
+          {activeTab === 'mlops' && <MlopsDashboard dataset={selectedDataset} />}
         </div>
-
       </main>
 
-      {/* Footer */}
-      <footer style={{ borderTop: '1px solid #1e293b', padding: '16px 24px', textAlign: 'center', fontSize: '0.82rem', color: 'var(--text-dim)' }}>
-        VisionCraft AI — Built for AI/ML Engineering Portfolio & Resume Showcase • Powered by React & Vision Transformers
+      <footer className="app-footer">
+        VisionCraft AI · Built by{' '}
+        <a href="https://github.com/shreyanshnshukla" target="_blank" rel="noreferrer">Shreyansh Nandan Shukla</a>
+        {' '}· React, Vite, Transformers.js & ONNX Runtime Web ·{' '}
+        <a href="https://github.com/shreyanshnshukla/visioncraft" target="_blank" rel="noreferrer">Source</a>
       </footer>
-
     </div>
   );
 }

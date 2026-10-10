@@ -1,16 +1,50 @@
-# React + vite
+# VisionCraft AI — In-Browser Computer Vision Workbench
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+**Live demo:** https://shreyanshnshukla.github.io/visioncraft/
 
-Currently, two official plugins are available:
+VisionCraft runs real computer-vision models **entirely in your browser**: no server, no API keys, and your images never leave your device. Pick a photo, upload your own or use your webcam, and watch a Vision Transformer detect objects. You can also classify any image against your own text labels with OpenAI's CLIP.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Features
 
-## React Compiler
+| | What it does | Model |
+|---|---|---|
+| **Object Detection** (live) | Detects 80 COCO classes on sample photos, uploads or webcam captures, with an adjustable confidence threshold and per-run latency | `Xenova/yolos-tiny` (default) or `Xenova/detr-resnet-50` |
+| **CLIP Zero-Shot** (live) | Scores an image against any free-text labels you type; no training needed | `Xenova/clip-vit-base-patch32` |
+| **BBox Annotator** | Draw boxes with mouse or touch and export them as **YOLO**, **COCO JSON** or **Pascal VOC XML** | — |
+| Embedding Projection, Feature Maps & Grad-CAM, MLOps Dashboard | UI demos of ML tooling built on synthetic data (labelled *Demo* in the app) | — |
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## How it works
 
-## Expanding the Oxlint configuration
+```
+React UI ──postMessage──▶ Web Worker ──▶ Transformers.js ──▶ ONNX Runtime Web (WASM)
+   ▲                         │                     │
+   └──── boxes / scores ◀────┘          quantized ONNX weights from the Hugging Face Hub
+                                        (downloaded once, then cached by the browser)
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+- **Off the main thread:** models load and run inside a module Web Worker (`src/ml/visionWorker.js`), so the UI never freezes during the download or during inference.
+- **One pixel pipeline:** every input (remote photo, uploaded file, webcam frame, or SVG scene) is drawn to a canvas, downscaled, converted to RGB and sent to the worker as a typed array (`src/ml/vision.js`).
+- **Live model status:** a small external store tracks download progress per model, ready/error state and real inference latency, and React reads it with `useSyncExternalStore`.
+- **Overlays:** detections come back as normalized boxes and are drawn on an SVG overlay in the image's own pixel space, so they line up at any screen size.
+
+## Tech stack
+
+React 19 · Vite · Transformers.js 3 · ONNX Runtime Web · Web Workers · Canvas API · lucide-react · GitHub Actions → GitHub Pages
+
+## Run locally
+
+```bash
+npm install
+npm run dev        # http://localhost:5173
+npm run build      # production build in dist/
+```
+
+Each model is downloaded the first time you run it (YOLOS-Tiny ≈ 7 MB, DETR ≈ 43 MB, CLIP ≈ 90 MB) and cached by the browser after that.
+
+## Deployment
+
+Every push to `main` builds and deploys to GitHub Pages through `.github/workflows/deploy.yml`.
+
+---
+
+Built by [Shreyansh Nandan Shukla](https://github.com/shreyanshnshukla).

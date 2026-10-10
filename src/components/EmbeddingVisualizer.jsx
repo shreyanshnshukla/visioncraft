@@ -26,7 +26,7 @@ export default function EmbeddingVisualizer() {
   const neighborIds = new Set(neighbors.map(n => n.id));
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: '20px' }}>
+    <div className="grid-main-side">
       
       {/* Interactive Vector Scatter Canvas */}
       <div className="glass-panel" style={{ padding: '20px' }}>

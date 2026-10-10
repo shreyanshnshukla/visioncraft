@@ -133,12 +133,3 @@ export const MOCK_VECTOR_CLUSTER = [
   { id: "vec-9", x: 520, y: 410, z: 430, label: "Chest X-Ray Radiograph View", category: "Healthcare AI", color: "#ff007f", sim: 0.97 },
   { id: "vec-10", x: 540, y: 425, z: 445, label: "Brain MRI Glaucoma Tissue Scan", category: "Healthcare AI", color: "#ff007f", sim: 0.92 }
 ];
-
-export const CLIP_PROMPT_TEMPLATES = [
-  "a photo of a sedan car on city road",
-  "a microchip on a green circuit board with defects",
-  "supermarket shelf with colorful beverage cans",
-  "medical chest radiograph showing lung tissue",
-  "a pedestrian walking across a crosswalk",
-  "empty retail store gap on shelf"
-];

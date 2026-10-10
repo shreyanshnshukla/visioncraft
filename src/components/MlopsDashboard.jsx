@@ -3,7 +3,7 @@ import { BarChart2, AlertTriangle, CheckCircle, ShieldCheck, Activity, Download 
 
 export default function MlopsDashboard({ dataset }) {
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+    <div className="grid-2">
       
       {/* Left Model Evaluation Cards & Confusion Matrix */}
       <div className="glass-panel" style={{ padding: '20px' }}>
